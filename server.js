@@ -1,7 +1,9 @@
 require('dotenv').config()
+const PORT = process.env.PORT || 8000;
 
 
-const cors = require('cors')
+const cors = require('cors');
+const { response } = require('express');
 const express = require('express')
 const morgan = require('morgan')
 const movieList = require('./movieList.json')
@@ -9,7 +11,9 @@ const movieList = require('./movieList.json')
 
 const app = express()
 
-app.use(morgan('dev'))
+const morganSetting= process.env.NODE_ENV === "production" ? "tiny" : "dev";
+
+app.use(morgan(morganSetting))
 app.use(cors())
 
 app.use(function validateBearerToken(req,res,next){
@@ -45,8 +49,7 @@ function handleMovieResults(req,res){
     }
     if(req.query.avg_vote){
             response = response.filter(movie => {
-                console.log(movie.avg_vote)
-                console.log(req.query.avg_vote)
+                
                 return movie.avg_vote >= parseFloat(req.query.avg_vote)
             })
     }
@@ -62,7 +65,18 @@ app.use((req, res) => {
   res.send('Hello, world!')
 })
 
-const PORT = 8000
+
+app.use((error, req, res, next) => {
+    let response;
+    if(process.env.NODE_ENV === 'production'){
+        response = {error: {message: 'server error'}}
+    }
+    else {
+        response = {error};
+    }
+    res.status(500).json(response)
+})
+
 
 app.listen(PORT, () => {
   console.log(`Server listening at http://localhost:${PORT}`)
